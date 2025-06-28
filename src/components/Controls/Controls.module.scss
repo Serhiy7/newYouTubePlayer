@@ -1,0 +1,15 @@
+.controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.controls button {
+  background: #393628;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  cursor: pointer;
+}

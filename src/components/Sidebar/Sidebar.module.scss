@@ -1,0 +1,52 @@
+/* ширина сайд-бара и сброс внутренних отступов */
+.sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  background: #181711;
+  display: flex;
+  flex-direction: column;
+}
+
+/* поиск */
+.search {
+  display: flex;
+  padding: 20px 24px;
+  gap: 8px;
+
+  .icon {
+    background: #393628;
+    padding: 0 12px;
+    border-radius: 12px 0 0 12px;
+    display: flex;
+    align-items: center;
+    color: #b9b49d;
+  }
+
+  input {
+    flex: 1;
+    background: #393628;
+    border: none;
+    border-radius: 0 12px 12px 0;
+    padding: 0 16px;
+    color: #fff;
+    font-size: 16px;
+
+    &::placeholder {
+      color: #b9b49d;
+    }
+  }
+}
+
+/* заголовок */
+.playlist-title {
+  margin: 0 24px 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* контейнер списка */
+.playlist {
+  overflow-y: auto;
+  padding-left: 24px;
+  flex: 1;
+}
