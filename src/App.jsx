@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
 import Sidebar from "./components/Sidebar/Sidebar";
 import TopIcons from "./components/TopIcons/TopIcons";
 import YouTubePlayer from "./components/YouTubePlayer/YouTubePlayer";
@@ -33,7 +39,32 @@ export default function App() {
   });
   const [volume, setVolume] = useState(50);
 
-  // отфильтрованный по поиску список
+  // ref для скрытого <audio> (Visualizer)
+  const audioRef = useRef(null);
+
+  // Навешиваем логи на <audio> один раз
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    console.log("🔊 audio.readyState:", audio.readyState);
+
+    const onCanPlay = () => console.log("🔊 audio canplay");
+    const onAudioPlay = () => console.log("🔊 audio play event");
+    const onAudioError = (e) => console.error("🔊 audio error:", e);
+
+    audio.addEventListener("canplay", onCanPlay);
+    audio.addEventListener("play", onAudioPlay);
+    audio.addEventListener("error", onAudioError);
+
+    return () => {
+      audio.removeEventListener("canplay", onCanPlay);
+      audio.removeEventListener("play", onAudioPlay);
+      audio.removeEventListener("error", onAudioError);
+    };
+  }, []);
+
+  // Фильтрация плейлиста
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return q === ""
@@ -45,71 +76,107 @@ export default function App() {
         );
   }, [search]);
 
-  // если текущий трек выпал из фильтра — сброс на первый
-  React.useEffect(() => {
+  // Сброс idx, если текущий трек исчез из filtered
+  useEffect(() => {
     if (!filtered.find((t) => t.id === PLAYLIST[idx].id)) {
-      const fallback = filtered[0] || PLAYLIST[0];
-      setIdx(PLAYLIST.findIndex((t) => t.id === fallback.id));
+      const fb = filtered[0] || PLAYLIST[0];
+      setIdx(PLAYLIST.findIndex((t) => t.id === fb.id));
     }
-  }, [filtered]);
+  }, [filtered, idx]);
 
   const current = PLAYLIST[idx];
 
+  // Парсер времени "MM:SS" → секунды
+  const parseSec = (str) => {
+    const [m, s] = str.split(":").map(Number);
+    return m * 60 + s;
+  };
+
+  // Колбэк на тик прогресса YouTube
+  const handleProgress = useCallback(({ currentTime, duration, percent }) => {
+    // 1) Обновляем UI
+    setProgress({ currentTime, duration, percent });
+
+    // 2) Синхронизируем скрытый audio
+    const audio = audioRef.current;
+    if (!audio) return;
+    const ytSec = parseSec(currentTime);
+    // подгоняем, если рассинхрон > 0.3 с
+    if (Math.abs(audio.currentTime - ytSec) > 0.3) {
+      audio.currentTime = ytSec;
+    }
+  }, []);
+
+  // YouTube-player готов
   const handlePlayerReady = useCallback(
     (ytPlayer) => {
       setPlayer(ytPlayer);
       ytPlayer.setVolume(volume);
       setPlaying(false);
+      audioRef.current?.load();
     },
     [volume]
   );
 
-  // следующий трек по окончании
+  // Автоплей по окончании
   const handleEnd = useCallback(() => {
     const i = filtered.findIndex((t) => t.id === current.id);
     const next = filtered[(i + 1) % filtered.length];
-    const originalIdx = PLAYLIST.findIndex((t) => t.id === next.id);
-    setIdx(originalIdx);
+    setIdx(PLAYLIST.findIndex((t) => t.id === next.id));
     setPlaying(true);
   }, [current.id, filtered]);
 
+  // Play/Pause YouTube + синхронный play/pause audio
   const handlePlayPause = () => {
     if (!player) return;
-    if (playing) player.pauseVideo();
-    else player.playVideo();
+    if (playing) {
+      player.pauseVideo();
+      audioRef.current.pause();
+    } else {
+      player.playVideo();
+      audioRef.current.play().catch(() => {});
+    }
     setPlaying(!playing);
   };
 
-  // Prev по filtered → original index
+  // Prev / Next
   const handlePrev = () => {
     const i = filtered.findIndex((t) => t.id === current.id);
     const prev = filtered[(i - 1 + filtered.length) % filtered.length];
-    const originalIdx = PLAYLIST.findIndex((t) => t.id === prev.id);
-    setIdx(originalIdx);
+    setIdx(PLAYLIST.findIndex((t) => t.id === prev.id));
     setPlaying(true);
   };
-  // Next по filtered → original index
   const handleNext = () => {
     const i = filtered.findIndex((t) => t.id === current.id);
     const next = filtered[(i + 1) % filtered.length];
-    const originalIdx = PLAYLIST.findIndex((t) => t.id === next.id);
-    setIdx(originalIdx);
+    setIdx(PLAYLIST.findIndex((t) => t.id === next.id));
     setPlaying(true);
   };
 
-  // выбор из списка: передаём весь объект track
+  // Выбор из Sidebar
   const handleSelect = useCallback((track) => {
-    const originalIdx = PLAYLIST.findIndex((t) => t.id === track.id);
-    if (originalIdx >= 0) {
-      setIdx(originalIdx);
-      setPlaying(true);
-    }
+    const i = PLAYLIST.findIndex((t) => t.id === track.id);
+    setIdx(i);
+    setPlaying(true);
   }, []);
 
-  const parseSec = (str) => {
-    const [m, s] = str.split(":").map(Number);
-    return m * 60 + s;
-  };
+  // При смене трека — обновляем src и при play сразу play()
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.src = `/api/audio?videoId=${current.id}`;
+    audio.load();
+    if (playing) audio.play().catch(() => {});
+  }, [current.id, playing]);
+
+  // Синхронизация play/pause
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    playing ? audio.play().catch(() => {}) : audio.pause();
+  }, [playing]);
+
+  // Seek-слайдер
   const handleSeek = (pct) => {
     if (!player) return;
     const dur = parseSec(progress.duration);
@@ -141,13 +208,21 @@ export default function App() {
           <YouTubePlayer
             videoId={current.id}
             volume={volume}
-            onProgress={setProgress}
+            onProgress={handleProgress}
             onPlayerReady={handlePlayerReady}
             onEnd={handleEnd}
           />
         </div>
 
-        <Visualizer />
+        {/* скрытый audio для визуализатора */}
+        <audio
+          ref={audioRef}
+          crossOrigin="anonymous"
+          preload="auto"
+          style={{ display: "none" }}
+        />
+
+        <Visualizer audioRef={audioRef} />
 
         <ProgressBar
           currentTime={progress.currentTime}
@@ -163,7 +238,13 @@ export default function App() {
           playing={playing}
         />
 
-        <VolumeControl volume={volume} onVolumeChange={setVolume} />
+        <VolumeControl
+          volume={volume}
+          onVolumeChange={(v) => {
+            setVolume(v);
+            player?.setVolume(v);
+          }}
+        />
       </main>
     </div>
   );
