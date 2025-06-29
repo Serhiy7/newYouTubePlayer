@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import Sidebar from "./components/Sidebar/Sidebar";
 import TopIcons from "./components/TopIcons/TopIcons";
 import YouTubePlayer from "./components/YouTubePlayer/YouTubePlayer";
@@ -23,6 +23,7 @@ const PLAYLIST = [
 
 export default function App() {
   const [idx, setIdx] = useState(0);
+  const [search, setSearch] = useState("");
   const [player, setPlayer] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState({
@@ -32,20 +33,46 @@ export default function App() {
   });
   const [volume, setVolume] = useState(50);
 
+  // отфильтрованный по поиску список
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q === ""
+      ? PLAYLIST
+      : PLAYLIST.filter(
+          (t) =>
+            t.title.toLowerCase().includes(q) ||
+            t.artist.toLowerCase().includes(q)
+        );
+  }, [search]);
+
+  // если текущий трек выпал из фильтра — сброс на первый
+  React.useEffect(() => {
+    if (!filtered.find((t) => t.id === PLAYLIST[idx].id)) {
+      const fallback = filtered[0] || PLAYLIST[0];
+      setIdx(PLAYLIST.findIndex((t) => t.id === fallback.id));
+    }
+  }, [filtered]);
+
   const current = PLAYLIST[idx];
 
-  // получаем инстанс YT.Player один раз
   const handlePlayerReady = useCallback(
     (ytPlayer) => {
       setPlayer(ytPlayer);
-      // поставить начальную громкость
       ytPlayer.setVolume(volume);
       setPlaying(false);
     },
     [volume]
   );
 
-  // Play/Pause
+  // следующий трек по окончании
+  const handleEnd = useCallback(() => {
+    const i = filtered.findIndex((t) => t.id === current.id);
+    const next = filtered[(i + 1) % filtered.length];
+    const originalIdx = PLAYLIST.findIndex((t) => t.id === next.id);
+    setIdx(originalIdx);
+    setPlaying(true);
+  }, [current.id, filtered]);
+
   const handlePlayPause = () => {
     if (!player) return;
     if (playing) player.pauseVideo();
@@ -53,23 +80,58 @@ export default function App() {
     setPlaying(!playing);
   };
 
-  // переключение треков
-  const handlePrev = () =>
-    setIdx((i) => (i === 0 ? PLAYLIST.length - 1 : i - 1));
-  const handleNext = () => setIdx((i) => (i + 1) % PLAYLIST.length);
+  // Prev по filtered → original index
+  const handlePrev = () => {
+    const i = filtered.findIndex((t) => t.id === current.id);
+    const prev = filtered[(i - 1 + filtered.length) % filtered.length];
+    const originalIdx = PLAYLIST.findIndex((t) => t.id === prev.id);
+    setIdx(originalIdx);
+    setPlaying(true);
+  };
+  // Next по filtered → original index
+  const handleNext = () => {
+    const i = filtered.findIndex((t) => t.id === current.id);
+    const next = filtered[(i + 1) % filtered.length];
+    const originalIdx = PLAYLIST.findIndex((t) => t.id === next.id);
+    setIdx(originalIdx);
+    setPlaying(true);
+  };
 
-  // выбор из списка
-  const handleSelect = useCallback((_, i) => {
-    setIdx(i);
-    setPlaying(false);
+  // выбор из списка: передаём весь объект track
+  const handleSelect = useCallback((track) => {
+    const originalIdx = PLAYLIST.findIndex((t) => t.id === track.id);
+    if (originalIdx >= 0) {
+      setIdx(originalIdx);
+      setPlaying(true);
+    }
   }, []);
+
+  const parseSec = (str) => {
+    const [m, s] = str.split(":").map(Number);
+    return m * 60 + s;
+  };
+  const handleSeek = (pct) => {
+    if (!player) return;
+    const dur = parseSec(progress.duration);
+    const to = (dur * pct) / 100;
+    player.seekTo(to, true);
+    const mm = Math.floor(to / 60);
+    const ss = String(Math.floor(to % 60)).padStart(2, "0");
+    setProgress({
+      currentTime: `${mm}:${ss}`,
+      duration: progress.duration,
+      percent: Math.round(pct),
+    });
+  };
 
   return (
     <div className="container">
       <Sidebar
-        playlist={PLAYLIST}
+        playlist={filtered}
         currentId={current.id}
         onSelect={handleSelect}
+        searchValue={search}
+        onSearchChange={setSearch}
       />
 
       <main className="main">
@@ -78,9 +140,10 @@ export default function App() {
         <div style={{ width: 800, margin: "0 auto", padding: 20 }}>
           <YouTubePlayer
             videoId={current.id}
+            volume={volume}
             onProgress={setProgress}
             onPlayerReady={handlePlayerReady}
-            volume={volume}
+            onEnd={handleEnd}
           />
         </div>
 
@@ -90,6 +153,7 @@ export default function App() {
           currentTime={progress.currentTime}
           duration={progress.duration}
           percent={progress.percent}
+          onSeek={handleSeek}
         />
 
         <Controls

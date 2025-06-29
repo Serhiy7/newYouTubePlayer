@@ -1,3 +1,4 @@
+/* src/components/VolumeControl/VolumeControl.module.scss */
 .volume-wrap {
   margin: 0 16px 24px;
   display: flex;
@@ -18,18 +19,22 @@
   .vol-slider {
     position: relative;
     width: 100%;
-    /* чтобы трек и ползунок занимали всю ширину */
     display: flex;
     align-items: center;
-    padding: 8px 0;
+    /* чуть больше «горизонтальной подложки», чтобы ползунок ловился удобнее */
+    padding: 12px 0;
 
-    /* скрываем нативный input */
+    /* нативный range над всеми остальными элементами */
     .range {
       position: absolute;
-      inset: 0; /* по всему блоку .vol-slider */
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       margin: 0;
       opacity: 0;
       cursor: pointer;
+      z-index: 10; /* выносим поверх слоя трека */
     }
 
     .track {
@@ -38,6 +43,7 @@
       background: #544f3b;
       border-radius: 2px;
       position: relative;
+      z-index: 1; /* чуть ниже input.range */
 
       .filled {
         height: 100%;
@@ -53,6 +59,8 @@
         background: #fff;
         border-radius: 50%;
         transform: translate(-50%, -50%);
+        /* чтобы по «белому кружочку» тоже был курсор */
+        cursor: pointer;
       }
     }
   }

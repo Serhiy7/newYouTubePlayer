@@ -7,10 +7,16 @@ export default function YouTubePlayer({
   volume = 50,
   onProgress = () => {},
   onPlayerReady = () => {},
+  onEnd = () => {},
 }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
+  const onEndRef = useRef(onEnd);
+
+  useEffect(() => {
+    onEndRef.current = onEnd;
+  }, [onEnd]);
 
   const fmt = (sec) => {
     const m = Math.floor(sec / 60);
@@ -18,7 +24,6 @@ export default function YouTubePlayer({
     return `${m}:${s}`;
   };
 
-  // опрос прогресса
   const startProgress = () => {
     clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
@@ -34,12 +39,10 @@ export default function YouTubePlayer({
     }, 500);
   };
 
-  // 1) Создаём плеер только раз при монтировании
   useEffect(() => {
-    let canceled = false;
+    let cancelled = false;
     YTReady.then((YT) => {
-      if (canceled || playerRef.current) return;
-
+      if (cancelled || playerRef.current) return;
       playerRef.current = new YT.Player(containerRef.current, {
         host: "https://www.youtube-nocookie.com",
         videoId,
@@ -50,28 +53,27 @@ export default function YouTubePlayer({
         },
         events: {
           onReady: (e) => {
-            const ifr = e.target.getIframe();
-            ifr.removeAttribute("width");
-            ifr.removeAttribute("height");
             e.target.setVolume(volume);
             onPlayerReady(e.target);
           },
           onStateChange: (e) => {
             if (e.data === YT.PlayerState.PLAYING) startProgress();
             else clearInterval(intervalRef.current);
+            if (e.data === YT.PlayerState.ENDED) {
+              onEndRef.current();
+            }
           },
         },
       });
     });
-
     return () => {
-      canceled = true;
+      cancelled = true;
       clearInterval(intervalRef.current);
-      if (playerRef.current?.destroy) playerRef.current.destroy();
+      playerRef.current?.destroy?.();
     };
-  }, []); // пустой массив — один раз
+  }, []); // монтирование
 
-  // 2) На изменение videoId — загружаем и сразу play
+  // подгрузка нового видео
   useEffect(() => {
     const p = playerRef.current;
     if (p?.loadVideoById) {
@@ -81,7 +83,7 @@ export default function YouTubePlayer({
     }
   }, [videoId]);
 
-  // 3) На изменение громкости — меняем её в плеере
+  // смена громкости
   useEffect(() => {
     const p = playerRef.current;
     if (p?.setVolume) p.setVolume(volume);
