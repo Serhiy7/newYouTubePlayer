@@ -1,3 +1,4 @@
+// src/components/YouTubePlayer/YouTubePlayer.jsx
 import React, { useEffect, useRef } from "react";
 import styles from "./YouTubePlayer.module.scss";
 import { YTReady } from "../../lib/yt";
@@ -42,10 +43,10 @@ export default function YouTubePlayer({
   useEffect(() => {
     let cancelled = false;
     YTReady.then((YT) => {
-      if (cancelled || playerRef.current) return;
+      if (cancelled) return;
       playerRef.current = new YT.Player(containerRef.current, {
         host: "https://www.youtube-nocookie.com",
-        videoId,
+        videoId, // initial
         playerVars: {
           autoplay: 0,
           controls: 1,
@@ -59,9 +60,7 @@ export default function YouTubePlayer({
           onStateChange: (e) => {
             if (e.data === YT.PlayerState.PLAYING) startProgress();
             else clearInterval(intervalRef.current);
-            if (e.data === YT.PlayerState.ENDED) {
-              onEndRef.current();
-            }
+            if (e.data === YT.PlayerState.ENDED) onEndRef.current();
           },
         },
       });
@@ -71,19 +70,17 @@ export default function YouTubePlayer({
       clearInterval(intervalRef.current);
       playerRef.current?.destroy?.();
     };
-  }, []); // монтирование
+  }, []); // mount once
 
-  // подгрузка нового видео
+  // при изменении videoId сразу загружаем и запускаем видео
   useEffect(() => {
     const p = playerRef.current;
     if (p?.loadVideoById) {
       p.loadVideoById(videoId);
       p.playVideo();
-      startProgress();
     }
   }, [videoId]);
 
-  // смена громкости
   useEffect(() => {
     const p = playerRef.current;
     if (p?.setVolume) p.setVolume(volume);

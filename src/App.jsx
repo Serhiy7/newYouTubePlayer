@@ -1,11 +1,5 @@
 // src/App.jsx
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import Sidebar from "./components/Sidebar/Sidebar";
 import TopIcons from "./components/TopIcons/TopIcons";
 import YouTubePlayer from "./components/YouTubePlayer/YouTubePlayer";
@@ -16,31 +10,24 @@ import VolumeControl from "./components/VolumeControl/VolumeControl";
 import "./index.scss";
 
 const INITIAL_PLAYLIST = [
-  { id: "dQf-bzmL5nU", title: "Méduse", artist: "BLR" },
-  {
-    id: "sK8eQWgGkKk",
-    title: "Bora!Bora!Bora!",
-    artist: "Scooter",
-  },
-  { id: "kJQP7kiw5Fk", title: "Despacito", artist: "Luis Fonsi" },
-
-  { id: "5qm8PH4xAss", title: "In Da Club", artist: "50 Cent" },
+  { id: "Zlg65HCwc9s", title: "Still", artist: "Dr. Dre ft. Snoop Dogg" },
   { id: "YVkUvmDQ3HY", title: "Without Me", artist: "Eminem" },
-  { id: "_CL6n0FJZpk", title: "Still", artist: "Dr. Dre ft. Snoop Dogg" },
+  { id: "dQf-bzmL5nU", title: "Méduse", artist: "BLR" },
+  { id: "sK8eQWgGkKk", title: "Bora!Bora!Bora!", artist: "Scooter" },
+  { id: "kJQP7kiw5Fk", title: "Despacito", artist: "Luis Fonsi" },
+  { id: "5qm8PH4xAss", title: "In Da Club", artist: "50 Cent" },
   { id: "ymNFyxvIdaM", title: "Freestyler", artist: "Bomfunk MC's" },
-
   {
     id: "uelHwf8o7_U",
     title: "Love The Way You Lie",
     artist: "Eminem ft. Rihanna",
   },
-  { id: "60ItHLz5WEA", title: "Faded", artist: "Alan Walker " },
+  { id: "60ItHLz5WEA", title: "Faded", artist: "Alan Walker" },
 ];
 
 export default function App() {
   const [playlist, setPlaylist] = useState(INITIAL_PLAYLIST);
   const [idx, setIdx] = useState(0);
-
   const [player, setPlayer] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState({
@@ -51,8 +38,102 @@ export default function App() {
   const [volume, setVolume] = useState(50);
 
   const audioRef = useRef(null);
+  const visualizerRef = useRef(null);
 
-  // Поиск по YouTube (или сброс на INITIAL_PLAYLIST), с автозапуском
+  const parseSec = (str) => {
+    const [m, s] = str.split(":").map(Number);
+    return m * 60 + s;
+  };
+
+  const handleProgress = useCallback(({ currentTime, duration, percent }) => {
+    setProgress({ currentTime, duration, percent });
+  }, []);
+
+  const handlePlayerReady = useCallback(
+    (yt) => {
+      setPlayer(yt);
+      yt.setVolume(volume);
+    },
+    [volume]
+  );
+
+  const handleEnd = useCallback(() => {
+    setIdx((i) => (i + 1) % playlist.length);
+    setPlaying(true);
+  }, [playlist.length]);
+
+  // 1) Load audio URL on track change
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.src = `/api/audio?videoId=${playlist[idx].id}`;
+    audio.load();
+  }, [idx, playlist]);
+
+  // 2) Play/pause & init visualizer, syncing audio after canplay
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !player) return;
+
+    // start or pause video immediately
+    if (playing) {
+      player.playVideo();
+    } else {
+      player.pauseVideo();
+      audio.pause();
+      return;
+    }
+
+    // when audio is ready, sync time and init viz
+    const startAudioAndViz = () => {
+      const t = player.getCurrentTime();
+      if (Number.isFinite(t)) {
+        try {
+          audio.currentTime = t;
+        } catch {}
+      }
+      visualizerRef.current?.init();
+      audio.play().catch(() => {});
+    };
+
+    if (audio.readyState >= 3) {
+      startAudioAndViz();
+    } else {
+      audio.addEventListener("canplay", startAudioAndViz, { once: true });
+    }
+
+    return () => {
+      audio.removeEventListener("canplay", startAudioAndViz);
+    };
+  }, [playing, idx, player]);
+
+  const handlePlayPause = () => {
+    if (!player) return;
+    setPlaying((p) => !p);
+  };
+  const handlePrev = () => {
+    setIdx((i) => (i - 1 + playlist.length) % playlist.length);
+    setPlaying(true);
+  };
+  const handleNext = () => {
+    setIdx((i) => (i + 1) % playlist.length);
+    setPlaying(true);
+  };
+  const handleSelect = useCallback((_, i) => {
+    setIdx(i);
+    setPlaying(true);
+  }, []);
+  const handleSeek = (pct) => {
+    if (!player) return;
+    const to = (parseSec(progress.duration) * pct) / 100;
+    player.seekTo(to, true);
+    setProgress((p) => ({ ...p, percent: pct }));
+    if (audioRef.current) {
+      const t = to;
+      if (Number.isFinite(t)) audioRef.current.currentTime = t;
+    }
+  };
+
   const handleSearch = useCallback(async (q) => {
     if (!q) {
       setPlaylist(INITIAL_PLAYLIST);
@@ -60,107 +141,14 @@ export default function App() {
       setPlaying(true);
       return;
     }
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-      const json = await res.json();
-      if (json.items) {
-        setPlaylist(json.items);
-        setIdx(0);
-        setPlaying(true);
-      }
-    } catch (err) {
-      console.error("Search error", err);
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const json = await res.json();
+    if (json.items) {
+      setPlaylist(json.items);
+      setIdx(0);
+      setPlaying(true);
     }
   }, []);
-
-  // Парсим "M:SS" → секунды
-  const parseSec = (str) => {
-    const [m, s] = str.split(":").map(Number);
-    return m * 60 + s;
-  };
-
-  // Синхронизируем скрытое audio с YouTube-progress
-  const handleProgress = useCallback(({ currentTime, duration, percent }) => {
-    setProgress({ currentTime, duration, percent });
-    const ytSec = parseSec(currentTime);
-    const audio = audioRef.current;
-    if (audio && Math.abs(audio.currentTime - ytSec) > 0.3) {
-      audio.currentTime = ytSec;
-    }
-  }, []);
-
-  // YouTube-player готов
-  const handlePlayerReady = useCallback(
-    (yt) => {
-      setPlayer(yt);
-      yt.setVolume(volume);
-      setPlaying(false);
-      audioRef.current?.load();
-    },
-    [volume]
-  );
-
-  // Автоплей следующего
-  const handleEnd = useCallback(() => {
-    const next = (idx + 1) % playlist.length;
-    setIdx(next);
-    setPlaying(true);
-  }, [idx, playlist.length]);
-
-  // Play / Pause оба плеера
-  const handlePlayPause = () => {
-    if (!player) return;
-    if (playing) {
-      player.pauseVideo();
-      audioRef.current.pause();
-    } else {
-      player.playVideo();
-      audioRef.current.play().catch(() => {});
-    }
-    setPlaying(!playing);
-  };
-
-  // Prev / Next
-  const handlePrev = () => {
-    const prev = (idx - 1 + playlist.length) % playlist.length;
-    setIdx(prev);
-    setPlaying(true);
-  };
-  const handleNext = () => {
-    const next = (idx + 1) % playlist.length;
-    setIdx(next);
-    setPlaying(true);
-  };
-
-  // Выбор из Sidebar
-  const handleSelect = useCallback((track, i) => {
-    setIdx(i);
-    setPlaying(true);
-  }, []);
-
-  // При смене трека — обновляем audio.src и, если «playing», сразу play()
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.src = `/api/audio?videoId=${playlist[idx].id}`;
-    audio.load();
-    if (playing) audio.play().catch(() => {});
-  }, [playlist, idx, playing]);
-
-  // Синхронизация play/pause
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    playing ? audio.play().catch(() => {}) : audio.pause();
-  }, [playing]);
-
-  // Seek
-  const handleSeek = (pct) => {
-    if (!player) return;
-    const to = (parseSec(progress.duration) * pct) / 100;
-    player.seekTo(to, true);
-    setProgress((p) => ({ ...p, percent: pct }));
-  };
 
   return (
     <div className="container">
@@ -189,7 +177,7 @@ export default function App() {
           style={{ display: "none" }}
         />
 
-        <Visualizer audioRef={audioRef} />
+        <Visualizer audioRef={audioRef} ref={visualizerRef} />
 
         <ProgressBar
           currentTime={progress.currentTime}
