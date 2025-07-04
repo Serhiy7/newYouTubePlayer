@@ -1,3 +1,4 @@
+// src/components/Sidebar/Sidebar.jsx
 import React, { useState } from "react";
 import PlaylistItem from "../PlaylistItem/PlaylistItem";
 import styles from "./Sidebar.module.scss";
@@ -9,6 +10,7 @@ export default function Sidebar({
   onSearchSubmit,
 }) {
   const [q, setQ] = useState("");
+
   return (
     <aside className={styles.sidebar}>
       <form
@@ -31,7 +33,7 @@ export default function Sidebar({
       <div className={styles.playlist}>
         {playlist.map((track, i) => (
           <PlaylistItem
-            key={track.id}
+            key={track.id ?? `track-${i}`} // ← здесь ключ
             track={track}
             isActive={track.id === currentId}
             onClick={() => onSelect(track, i)}
