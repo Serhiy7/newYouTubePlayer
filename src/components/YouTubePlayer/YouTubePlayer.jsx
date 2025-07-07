@@ -93,9 +93,6 @@ export default function YouTubePlayer({
       {/* сюда YO­UTU­BE внедрит свой iframe/video */}
       <div ref={containerRef} />
       {/* если нужен свой оверлей на «плей» */}
-      <div className={styles.overlay}>
-        <button className={styles.playBtn}>►</button>
-      </div>
     </div>
   );
 }

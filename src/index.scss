@@ -1,35 +1,104 @@
-/* сбросы */
+/* ===================================================================
+   ГЛОБАЛЬНЫЕ СБРОСЫ + УТИЛИТЫ
+   =================================================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+
 body {
   font-family: "Lexend", "Noto Sans", sans-serif;
   background: #181711;
   color: #fff;
 }
 
-/* flex-структура */
-.container {
-  display: flex;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+/* Утилиты */
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
 }
 .p-4 {
   padding: 1rem;
 }
 
-/* наши утилиты */
-.max-w-\[960px\] {
-  max-width: 960px;
+/* ===================================================================
+   ОСНОВНОЙ МАКЕТ
+   =================================================================== */
+.container {
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
-.mx-auto {
+
+.sidebar {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.main > * {
+  width: 100%;
+  max-width: 960px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* ===================================================================
+   TABLET (481–768px): sidebar сверху, контент под ним
+   =================================================================== */
+@media (max-width: 768px) and (min-width: 481px) {
+  .container {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    order: 0;
+  }
+  .main {
+    order: 1;
+  }
+}
+
+/* ===================================================================
+   MOBILE (<480px): шапка-бургер, всё под ней по колонке
+   =================================================================== */
+@media (max-width: 480px) {
+  html,
+  body {
+    font-size: 14px;
+  }
+  .container {
+    flex-direction: column;
+  }
+  /* делаем sidebar фиксированным top-баром */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: #181711;
+
+    /* бургер-иконка */
+    &::before {
+      content: "☰";
+      font-size: 1.5rem;
+      color: #fff;
+      margin-right: 12px;
+      cursor: pointer;
+    }
+  }
+  /* прячем реальный список, он выпадет по клику */
+  .playlist {
+    display: none;
+  }
 }

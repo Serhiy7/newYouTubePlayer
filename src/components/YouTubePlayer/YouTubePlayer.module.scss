@@ -1,26 +1,27 @@
+/* src/components/YouTubePlayer/YouTubePlayer.module.scss */
+
 .wrapper {
   position: relative;
   width: 100%;
-  max-width: 960px; /* ограничиваем ширину по макету */
-  aspect-ratio: 16 / 9; /* современный способ 16:9 */
-  margin: 0 auto;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  margin: 24px auto 0;
   overflow: hidden;
   border-radius: 16px;
   background: #000;
-
-  /* Блокируем клики по всему контейнеру (ну чтобы iframe не ловил ничего) */
+  /* блокируем клики по самому плееру */
   pointer-events: none;
 
-  /* Сброс штатного контейнера видео */
+  /* сброс штатного контейнера YouTube */
   :global(.html5-video-container) {
     position: absolute !important;
-    inset: 0 !important; /* top:0; right:0; bottom:0; left:0 */
+    inset: 0 !important;
     width: 100% !important;
     height: 100% !important;
     pointer-events: none !important;
   }
 
-  /* Само <iframe> / <video> внутри */
+  /* сам iframe или video-поток */
   :global(iframe),
   :global(.video-stream),
   :global(.html5-main-video) {
@@ -34,13 +35,76 @@
   }
 }
 
-/* Большая кнопка Play */
-:global(.ytp-large-play-button) {
+/* прячем ВСЕ штатные элементы YouTube */
+:global(
+    /* большая кнопка */
+    .ytp-large-play-button, 
+    .ytp-large-play-button-container,
+    /* оверлей перед стартом */
+    .ytp-overlay-play-button,
+    /* мини-превью при cued */
+    .ytp-cued-thumbnail-overlay,
+    .ytp-cued-thumbnail-overlay-image,
+    /* хром — верх/низ/градиенты/контролы */
+    .ytp-chrome-top,
+    .ytp-chrome-bottom,
+    .ytp-chrome-controls,
+    .ytp-gradient-top,
+    .ytp-gradient-bottom,
+    /* спиннер */
+    .ytp-spinner,
+    .ytp-loading-spinner,
+    /* карточки в конце */
+    .ytp-ce-element,
+    /* водяной знак */
+    .ytp-watermark,
+    /* пауза-оверлей */
+    .ytp-pause-overlay
+  ) {
   display: none !important;
+  pointer-events: none !important;
 }
 
-/* превью-оверлей при cued */
-:global(.ytp-cued-thumbnail-overlay),
-:global(.ytp-cued-thumbnail-overlay-image) {
-  display: none !important;
+/* ваш собственный оверлей (единственная точка, где ловим клики) */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.playBtn {
+  font-size: 3rem;
+  color: #fff;
+  background: transparent;
+  border: none;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  line-height: 1;
+}
+
+/* Tablet: 481–768px */
+@media (min-width: 481px) and (max-width: 768px) {
+  .wrapper {
+    margin-top: 16px;
+    max-width: 100%;
+  }
+  .playBtn {
+    font-size: 2.5rem;
+  }
+}
+
+/* Mobile: до 480px */
+@media (max-width: 480px) {
+  .wrapper {
+    margin: 12px auto 0;
+    border-radius: 0;
+    max-width: 100%;
+  }
+  .playBtn {
+    font-size: 2rem;
+  }
 }

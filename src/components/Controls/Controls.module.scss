@@ -1,16 +1,42 @@
-//Controls.module.scss
 .controls {
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin: 16px 0;
+  margin: 16px auto;
+
+  button {
+    background: #393628;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    cursor: pointer;
+  }
 }
 
-.controls button {
-  background: #393628;
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 9999px;
-  cursor: pointer;
+/* Tablet */
+@media (max-width: 768px) and (min-width: 481px) {
+  .controls {
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .controls button {
+    padding: 7px 14px;
+    font-size: 15px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .controls {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .controls button {
+    flex: 1;
+    padding: 6px 0;
+    font-size: 14px;
+  }
 }
