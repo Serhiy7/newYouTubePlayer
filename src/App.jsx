@@ -160,8 +160,6 @@ export default function App() {
       />
 
       <main className="main">
-        {/* <TopIcons /> */}
-
         <YouTubePlayer
           videoId={playlist[idx].id}
           volume={volume}
