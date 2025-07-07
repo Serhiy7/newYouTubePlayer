@@ -48,8 +48,10 @@ export default function YouTubePlayer({
         host: "https://www.youtube-nocookie.com",
         videoId, // initial
         playerVars: {
-          autoplay: 0,
-          controls: 1,
+          controls: 0, // ОТКЛЮЧАЕМ нативные контролы
+          disablekb: 1, // Блокируем клавиши
+          modestbranding: 1, // Минимизируем лого
+          rel: 0, // Без рекомендаций в конце
           origin: window.location.origin,
         },
         events: {
@@ -86,5 +88,14 @@ export default function YouTubePlayer({
     if (p?.setVolume) p.setVolume(volume);
   }, [volume]);
 
-  return <div ref={containerRef} className={styles.wrapper} />;
+  return (
+    <div className={` ${styles.wrapper} max-w-[960px] mx-auto`}>
+      {/* сюда YO­UTU­BE внедрит свой iframe/video */}
+      <div ref={containerRef} />
+      {/* если нужен свой оверлей на «плей» */}
+      <div className={styles.overlay}>
+        <button className={styles.playBtn}>►</button>
+      </div>
+    </div>
+  );
 }

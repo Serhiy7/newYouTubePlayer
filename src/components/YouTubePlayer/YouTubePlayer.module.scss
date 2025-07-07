@@ -1,33 +1,46 @@
 .wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 16px;
+  max-width: 960px; /* ограничиваем ширину по макету */
+  aspect-ratio: 16 / 9; /* современный способ 16:9 */
+  margin: 0 auto;
   overflow: hidden;
+  border-radius: 16px;
+  background: #000;
+
+  /* Блокируем клики по всему контейнеру (ну чтобы iframe не ловил ничего) */
+  pointer-events: none;
+
+  /* Сброс штатного контейнера видео */
+  :global(.html5-video-container) {
+    position: absolute !important;
+    inset: 0 !important; /* top:0; right:0; bottom:0; left:0 */
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+  }
+
+  /* Само <iframe> / <video> внутри */
+  :global(iframe),
+  :global(.video-stream),
+  :global(.html5-main-video) {
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    object-fit: cover !important;
+    pointer-events: none !important;
+  }
 }
 
-.iframeContainer,
-.wrapper iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+/* Большая кнопка Play */
+:global(.ytp-large-play-button) {
+  display: none !important;
 }
 
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.playBtn {
-  font-size: 3rem;
-  color: white;
-  background: transparent;
-  border: none;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+/* превью-оверлей при cued */
+:global(.ytp-cued-thumbnail-overlay),
+:global(.ytp-cued-thumbnail-overlay-image) {
+  display: none !important;
 }

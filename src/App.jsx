@@ -10,7 +10,7 @@ import VolumeControl from "./components/VolumeControl/VolumeControl";
 import "./index.scss";
 
 const INITIAL_PLAYLIST = [
-  { id: "Zlg65HCwc9s", title: "Still", artist: "Dr. Dre ft. Snoop Dogg" },
+  { id: "_CL6n0FJZpk", title: "Still", artist: "Dr. Dre ft. Snoop Dogg" },
   { id: "YVkUvmDQ3HY", title: "Without Me", artist: "Eminem" },
   { id: "dQf-bzmL5nU", title: "Méduse", artist: "BLR" },
   { id: "sK8eQWgGkKk", title: "Bora!Bora!Bora!", artist: "Scooter" },

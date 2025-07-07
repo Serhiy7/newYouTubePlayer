@@ -1,3 +1,4 @@
+/* сбросы */
 * {
   margin: 0;
   padding: 0;
@@ -8,6 +9,8 @@ body {
   background: #181711;
   color: #fff;
 }
+
+/* flex-структура */
 .container {
   display: flex;
   min-height: 100vh;
@@ -21,6 +24,8 @@ body {
 .p-4 {
   padding: 1rem;
 }
+
+/* наши утилиты */
 .max-w-\[960px\] {
   max-width: 960px;
 }
