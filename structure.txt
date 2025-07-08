@@ -1,0 +1,58 @@
+yout/                       ← корневая папка проекта
+├── .vercel/
+│   └── cache/
+│       ├── project.json
+│       └── README.txt
+├── api/
+│   ├── audio.js
+│   └── search.js
+├── node_modules/
+├── public/
+│   └── … (статические файлы)
+├── src/
+│   ├── assets/
+│   │   └── … (медиа, шрифты, картинки)
+│   ├── components/
+│   │   ├── Controls/
+│   │   │   ├── Controls.jsx
+│   │   │   └── Controls.module.scss
+│   │   ├── PlaylistItem/
+│   │   │   ├── PlaylistItem.jsx
+│   │   │   └── PlaylistItem.module.scss
+│   │   ├── ProgressBar/
+│   │   │   ├── ProgressBar.jsx
+│   │   │   └── ProgressBar.module.scss
+│   │   ├── Sidebar/
+│   │   │   ├── Sidebar.jsx
+│   │   │   └── Sidebar.module.scss
+│   │   ├── Visualizer/
+│   │   │   ├── Visualizer.jsx
+│   │   │   └── Visualizer.module.scss
+│   │   ├── VolumeControl/
+│   │   │   ├── VolumeControl.jsx
+│   │   │   └── VolumeControl.module.scss
+│   │   └── YouTubePlayer/
+│   │       ├── YouTubePlayer.jsx
+│   │       └── YouTubePlayer.module.scss
+│   ├── data/
+│   │   └── playlist.js
+│   ├── hooks/
+│   │   ├── useAudioPlayer.js
+│   │   ├── useAudioSync.js
+│   │   ├── usePlaylist.js
+│   │   ├── useVisualizer.js
+│   │   └── useYouTubePlayer.js
+│   ├── lib/
+│   │   └── yt.js
+│   ├── App.jsx
+│   ├── App.css
+│   ├── index.scss
+│   └── main.jsx
+├── .env
+├── .gitignore
+├── index.html
+├── package.json
+├── package-lock.json
+├── README.md
+├── structure.txt
+└── vite.config.js

@@ -1,7 +1,7 @@
 // src/components/YouTubePlayer/YouTubePlayer.jsx
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import styles from "./YouTubePlayer.module.scss";
-import { YTReady } from "../../lib/yt";
+import { useYouTubePlayer } from "../../hooks/useYouTubePlayer";
 
 export default function YouTubePlayer({
   videoId,
@@ -11,88 +11,20 @@ export default function YouTubePlayer({
   onEnd = () => {},
 }) {
   const containerRef = useRef(null);
-  const playerRef = useRef(null);
-  const intervalRef = useRef(null);
-  const onEndRef = useRef(onEnd);
 
-  useEffect(() => {
-    onEndRef.current = onEnd;
-  }, [onEnd]);
-
-  const fmt = (sec) => {
-    const m = Math.floor(sec / 60);
-    const s = String(Math.floor(sec % 60)).padStart(2, "0");
-    return `${m}:${s}`;
-  };
-
-  const startProgress = () => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      const p = playerRef.current;
-      if (!p?.getCurrentTime) return;
-      const t = p.getCurrentTime();
-      const d = p.getDuration();
-      onProgress({
-        currentTime: fmt(t),
-        duration: fmt(d),
-        percent: d ? Math.round((t / d) * 100) : 0,
-      });
-    }, 500);
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    YTReady.then((YT) => {
-      if (cancelled) return;
-      playerRef.current = new YT.Player(containerRef.current, {
-        host: "https://www.youtube-nocookie.com",
-        videoId, // initial
-        playerVars: {
-          controls: 0, // ОТКЛЮЧАЕМ нативные контролы
-          disablekb: 1, // Блокируем клавиши
-          modestbranding: 1, // Минимизируем лого
-          rel: 0, // Без рекомендаций в конце
-          origin: window.location.origin,
-        },
-        events: {
-          onReady: (e) => {
-            e.target.setVolume(volume);
-            onPlayerReady(e.target);
-          },
-          onStateChange: (e) => {
-            if (e.data === YT.PlayerState.PLAYING) startProgress();
-            else clearInterval(intervalRef.current);
-            if (e.data === YT.PlayerState.ENDED) onEndRef.current();
-          },
-        },
-      });
-    });
-    return () => {
-      cancelled = true;
-      clearInterval(intervalRef.current);
-      playerRef.current?.destroy?.();
-    };
-  }, []); // mount once
-
-  // при изменении videoId сразу загружаем и запускаем видео
-  useEffect(() => {
-    const p = playerRef.current;
-    if (p?.loadVideoById) {
-      p.loadVideoById(videoId);
-      p.playVideo();
-    }
-  }, [videoId]);
-
-  useEffect(() => {
-    const p = playerRef.current;
-    if (p?.setVolume) p.setVolume(volume);
-  }, [volume]);
+  // хук сам создаст плеер и повесит все эффекты
+  useYouTubePlayer({
+    containerRef,
+    videoId,
+    volume,
+    onProgress,
+    onPlayerReady,
+    onEnd,
+  });
 
   return (
-    <div className={` ${styles.wrapper} max-w-[960px] mx-auto`}>
-      {/* сюда YO­UTU­BE внедрит свой iframe/video */}
+    <div className={` ${styles.wrapper} max-w-[850px] mx-auto`}>
       <div ref={containerRef} />
-      {/* если нужен свой оверлей на «плей» */}
     </div>
   );
 }

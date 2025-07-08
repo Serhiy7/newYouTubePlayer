@@ -1,7 +1,6 @@
 /* src/components/Sidebar/Sidebar.module.scss */
 
 .sidebar {
-  /* делаем гибкую ширину со строгим максимумом */
   width: 100%;
   max-width: 328.38px;
   background: #181711;
@@ -9,31 +8,65 @@
   flex-direction: column;
 
   .search {
+    position: relative;
     display: flex;
-    padding: 20px 24px;
-    gap: 8px;
+    align-items: center;
+    background: #393628;
+    border-radius: 24px;
+    padding: 2px 12px;
+    margin: 15px 24px;
+    transition: box-shadow 0.2s;
 
-    .icon {
-      background: #393628;
-      padding: 0 12px;
-      border-radius: 12px 0 0 12px;
-      display: flex;
-      align-items: center;
-      color: #b9b49d;
+    &:focus-within {
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.5);
     }
 
     input {
       flex: 1;
-      background: #393628;
+      background: transparent;
       border: none;
-      border-radius: 0 12px 12px 0;
-      padding: 0 16px;
+      outline: none;
       color: #fff;
       font-size: 16px;
+      padding: 4px 8px;
 
       &::placeholder {
         color: #b9b49d;
       }
+    }
+
+    .searchBtn,
+    .clearBtn {
+      background: transparent;
+      border: none;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #b9b49d;
+      font-size: 18px;
+      transition: color 0.2s, transform 0.1s;
+
+      &:hover {
+        color: #fff;
+        transform: scale(1.1);
+      }
+    }
+
+    .searchBtn {
+      margin-right: 8px;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    .clearBtn {
+      margin-left: 8px;
+      font-size: 20px;
+      line-height: 1;
     }
   }
 
@@ -41,6 +74,7 @@
     margin: 0 24px 8px;
     font-size: 18px;
     font-weight: 700;
+    color: #fff;
   }
 
   .playlist {
@@ -50,26 +84,26 @@
   }
 }
 
-/* ===================================
-   Tablet: 481px–768px
-   обрезаем список до 5 треков
-   =================================== */
+/* Tablet: 481px–768px */
 @media (max-width: 768px) and (min-width: 481px) {
   .sidebar {
-    /* на планшете используем 100% ширины (до макс 328.38px из основного правила) */
     margin: 0 auto;
 
     .search {
-      padding: 16px 20px;
-      gap: 6px;
-
-      .icon {
-        padding: 0 10px;
-      }
+      padding: 6px 10px;
+      margin: 16px 20px;
 
       input {
-        padding: 0 14px;
         font-size: 15px;
+        padding: 4px 6px;
+      }
+
+      .searchBtn {
+        margin-right: 6px;
+      }
+
+      .clearBtn {
+        margin-left: 6px;
       }
     }
 
@@ -81,7 +115,6 @@
     .playlist {
       padding-left: 20px;
 
-      /* скрываем все треки, начиная с 6-го */
       > *:nth-child(n + 6) {
         display: none;
       }
@@ -89,28 +122,28 @@
   }
 }
 
-/* ===================================
-   Mobile: до 480px
-   обрезаем список до 5 треков
-   =================================== */
+/* Mobile: до 480px */
 @media (max-width: 480px) {
   .sidebar {
-    /* на мобилке сайдбар становится «шапкой» или full-width */
     width: 100%;
     max-width: none;
-    height: auto; /* если надо, тему шапки можно тут настраивать */
+    height: auto;
 
     .search {
-      padding: 12px 16px;
-      gap: 4px;
-
-      .icon {
-        padding: 0 8px;
-      }
+      padding: 4px 8px;
+      margin: 12px 16px;
 
       input {
-        padding: 0 12px;
         font-size: 14px;
+        padding: 4px 6px;
+      }
+
+      .searchBtn {
+        margin-right: 4px;
+      }
+
+      .clearBtn {
+        margin-left: 4px;
       }
     }
 
