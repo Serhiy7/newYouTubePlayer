@@ -10,52 +10,35 @@ export default async function handler(req, res) {
 
   const url = `https://www.youtube.com/watch?v=${videoId}`;
 
-  // 1) Собираем ваши YouTube-куки из ENV и задаём реальный браузерный UA
-  const cookie = process.env.YTDL_COOKIES || "";
-  const ua =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-    "Chrome/117.0.0.0 Safari/537.36";
-  const requestOptions = {
-    headers: {
-      cookie,
-      "User-Agent": ua,
-    },
-  };
-
-  // 2) Получаем информацию о видео с этими заголовками
   let info;
   try {
-    info = await ytdl.getInfo(url, { requestOptions });
+    info = await ytdl.getInfo(url);
   } catch (err) {
     console.error("Failed to get video info:", err);
     res.status(500).json({ error: "Could not retrieve video info" });
     return;
   }
 
-  // 3) Выбираем лучший аудио-формат
+  // Выбираем лучший аудио-формат
   const format = ytdl.chooseFormat(info.formats, { quality: "highestaudio" });
-  if (!format?.url) {
+  if (!format || !format.url) {
     console.error("No suitable audio format found", info.formats);
     res.status(500).json({ error: "No audio format available" });
     return;
   }
 
-  // 4) Отправляем CORS и корректный Content-Type
+  // Устанавливаем заголовки CORS и типа контента
   const [mime] = format.mimeType.split(";");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", mime);
   res.setHeader("Cache-Control", "public, max-age=86400");
 
-  // 5) Стримим аудио, передавая те же requestOptions
-  const stream = ytdl.downloadFromInfo(info, {
-    format,
-    requestOptions,
-  });
+  // Запускаем стриминг аудио
+  const stream = ytdl.downloadFromInfo(info, { format });
 
   stream.on("error", (err) => {
     console.error("Stream error:", err);
-    res.end();
+    res.end(); // завершение при ошибке
   });
 
   stream.pipe(res);

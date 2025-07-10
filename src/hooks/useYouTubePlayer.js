@@ -15,7 +15,7 @@ export function useYouTubePlayer({
   const intervalRef = useRef(null);
   const onEndRef = useRef(onEnd);
 
-  // обновляем onEnd без пересоздания плеера
+  // обновляем callback onEnd без пересоздания плеера
   useEffect(() => {
     onEndRef.current = onEnd;
   }, [onEnd]);
@@ -27,17 +27,30 @@ export function useYouTubePlayer({
     return `${m}:${s}`;
   };
 
-  //
-  // 1) Эффект монтирования: создаём плеер только при первом рендере
-  //
+  // запускаем таймер прогресса
+  const startProgress = () => {
+    clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      const p = playerRef.current;
+      if (!p?.getCurrentTime) return;
+      const t = p.getCurrentTime();
+      const d = p.getDuration();
+      onProgress({
+        currentTime: fmt(t),
+        duration: fmt(d),
+        percent: d ? Math.round((t / d) * 100) : 0,
+      });
+    }, progressInterval);
+  };
+
+  // монтирование и инициализация YouTube Player
   useEffect(() => {
     let cancelled = false;
     YTReady.then((YT) => {
       if (cancelled) return;
-
       playerRef.current = new YT.Player(containerRef.current, {
         host: "https://www.youtube-nocookie.com",
-        videoId, // инициализируем сразу с первым видео
+        videoId,
         playerVars: {
           controls: 0,
           disablekb: 1,
@@ -51,23 +64,9 @@ export function useYouTubePlayer({
             onPlayerReady(e.target);
           },
           onStateChange: (e) => {
-            // прогресс
-            clearInterval(intervalRef.current);
-            if (e.data === YT.PlayerState.PLAYING) {
-              intervalRef.current = setInterval(() => {
-                const t = e.target.getCurrentTime();
-                const d = e.target.getDuration();
-                onProgress({
-                  currentTime: fmt(t),
-                  duration: fmt(d),
-                  percent: d ? Math.round((t / d) * 100) : 0,
-                });
-              }, progressInterval);
-            }
-            // окончание
-            if (e.data === YT.PlayerState.ENDED) {
-              onEndRef.current();
-            }
+            if (e.data === YT.PlayerState.PLAYING) startProgress();
+            else clearInterval(intervalRef.current);
+            if (e.data === YT.PlayerState.ENDED) onEndRef.current();
           },
         },
       });
@@ -76,13 +75,11 @@ export function useYouTubePlayer({
     return () => {
       cancelled = true;
       clearInterval(intervalRef.current);
-      playerRef.current?.destroy();
+      playerRef.current?.destroy?.();
     };
-  }, [containerRef]); // <-- ЗАБЫЛИ убрать videoId и volume из зависимостей
+  }, [containerRef, volume, onPlayerReady, progressInterval]);
 
-  //
-  // 2) Эффект смены ролика: просто загружаем новое видео в уже существующий плеер
-  //
+  // при изменении videoId — грузим и стартуем
   useEffect(() => {
     const p = playerRef.current;
     if (p?.loadVideoById) {
@@ -91,14 +88,10 @@ export function useYouTubePlayer({
     }
   }, [videoId]);
 
-  //
-  // 3) Эффект изменения громкости
-  //
+  // при изменении громкости
   useEffect(() => {
     const p = playerRef.current;
-    if (p?.setVolume) {
-      p.setVolume(volume);
-    }
+    if (p?.setVolume) p.setVolume(volume);
   }, [volume]);
 
   return playerRef;
