@@ -1,5 +1,6 @@
 // src/hooks/useAudioSync.js
 import { useEffect } from "react";
+import { fetchVideoInfo } from "../lib/invidious";
 
 export function useAudioSync({
   audioRef,
@@ -9,15 +10,25 @@ export function useAudioSync({
   idx,
   playlist,
 }) {
-  // 1) Меняем src и reload на смене трека
+  // 1) При смене трека — подгружаем URL из Invidious и reload
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.src = `/api/audio?videoId=${playlist[idx].id}`;
-    audio.load();
+
+    fetchVideoInfo(playlist[idx].id)
+      .then((info) => {
+        const fmt = info.adaptiveFormats.find((f) =>
+          f.mimeType.startsWith("audio/")
+        );
+        if (!fmt?.url) throw new Error("No audio URL");
+        audio.crossOrigin = "anonymous";
+        audio.src = fmt.url;
+        audio.load();
+      })
+      .catch(console.error);
   }, [idx, playlist, audioRef]);
 
-  // 2) Play/Pause + синхронизация времени + init визуализатора
+  // 2) При play/pause — синхронизируем время и запускаем визуализатор
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !player) return;
@@ -48,5 +59,5 @@ export function useAudioSync({
     return () => {
       audio.removeEventListener("canplay", syncAndStart);
     };
-  }, [playing, idx, player, audioRef, visualizerRef, playlist]);
+  }, [playing, idx, player, audioRef, visualizerRef]);
 }
