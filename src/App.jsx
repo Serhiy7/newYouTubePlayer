@@ -18,8 +18,7 @@ export default function App() {
     playing,
     volume,
     progress,
-    audioRef,
-    visualizerRef,
+
     onPlayPause,
     onPrev,
     onNext,
@@ -50,14 +49,7 @@ export default function App() {
           onEnd={onEnd}
         />
 
-        <audio
-          ref={audioRef}
-          crossOrigin="anonymous"
-          preload="auto"
-          style={{ display: "none" }}
-        />
-
-        <Visualizer audioRef={audioRef} ref={visualizerRef} />
+        <Visualizer playing={playing} />
 
         <ProgressBar
           currentTime={progress.currentTime}

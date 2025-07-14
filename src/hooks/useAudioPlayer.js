@@ -1,17 +1,13 @@
 // src/hooks/useAudioPlayer.js
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { usePlaylist } from "./usePlaylist";
-import { useAudioSync } from "./useAudioSync";
 
 export function useAudioPlayer(initialPlaylist) {
-  const audioRef = useRef(null);
-  const visualizerRef = useRef(null);
-
   // 1) плейлист + поиск
   const { playlist, idx, select, next, prev, search } =
     usePlaylist(initialPlaylist);
 
-  // 2) плеер + play/pause + volume + progress
+  // 2) YouTube-плеер + play/pause + volume + progress
   const [player, setPlayer] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -21,12 +17,8 @@ export function useAudioPlayer(initialPlaylist) {
     percent: 0,
   });
 
-  // колбэки для YouTubePlayer
-  const handleProgress = useCallback(({ currentTime, duration, percent }) => {
-    setProgress({ currentTime, duration, percent });
-  }, []);
-
-  const handlePlayerReady = useCallback(
+  // Когда плеер готов — сохраняем его инстанс
+  const onPlayerReady = useCallback(
     (yt) => {
       setPlayer(yt);
       yt.setVolume(volume);
@@ -34,33 +26,33 @@ export function useAudioPlayer(initialPlaylist) {
     [volume]
   );
 
-  const handleEnd = useCallback(() => {
+  // Обработка прогресса видео (YouTubePlayer вызывает этот колбэк)
+  const onProgress = useCallback(({ currentTime, duration, percent }) => {
+    setProgress({ currentTime, duration, percent });
+  }, []);
+
+  // Когда видео дошло до конца — переходим к следующему
+  const onEnd = useCallback(() => {
     next();
     setPlaying(true);
   }, [next]);
 
-  // 3) синхронизируем audioRef + visualizerRef с YouTubePlayer
-  useAudioSync({
-    audioRef,
-    visualizerRef,
-    player,
-    playing,
-    idx,
-    playlist,
-  });
+  // При изменении `playing` — запускаем или ставим на паузу YouTube-плеер
+  useEffect(() => {
+    if (!player) return;
+    if (playing) {
+      player.playVideo();
+    } else {
+      player.pauseVideo();
+    }
+  }, [playing, player]);
 
-  // смена громкости в реальном времени
+  // Меняем громкость в реальном времени
   useEffect(() => {
     if (player?.setVolume) player.setVolume(volume);
   }, [volume, player]);
 
-  // конвертер mm:ss → секунды
-  const parseSec = (str) => {
-    const [m, s] = str.split(":").map(Number);
-    return m * 60 + s;
-  };
-
-  // вспомогательные обработчики UI
+  // Вспомогательные обработчики для UI
   const onPlayPause = useCallback(() => {
     if (!player) return;
     setPlaying((p) => !p);
@@ -84,6 +76,12 @@ export function useAudioPlayer(initialPlaylist) {
     [select]
   );
 
+  // Парсер mm:ss → секунды
+  const parseSec = (str) => {
+    const [m, s] = str.split(":").map(Number);
+    return m * 60 + s;
+  };
+
   const onSeek = useCallback(
     (pct) => {
       if (!player) return;
@@ -91,9 +89,6 @@ export function useAudioPlayer(initialPlaylist) {
       const to = (total * pct) / 100;
       player.seekTo(to, true);
       setProgress((p) => ({ ...p, percent: pct }));
-      if (audioRef.current && Number.isFinite(to)) {
-        audioRef.current.currentTime = to;
-      }
     },
     [player, progress.duration]
   );
@@ -113,8 +108,6 @@ export function useAudioPlayer(initialPlaylist) {
     playing,
     volume,
     progress,
-    audioRef,
-    visualizerRef,
     // события для UI
     onPlayPause,
     onPrev,
@@ -123,8 +116,8 @@ export function useAudioPlayer(initialPlaylist) {
     onSeek,
     onSearch,
     onVolumeChange: setVolume,
-    onProgress: handleProgress,
-    onPlayerReady: handlePlayerReady,
-    onEnd: handleEnd,
+    onProgress,
+    onPlayerReady,
+    onEnd,
   };
 }

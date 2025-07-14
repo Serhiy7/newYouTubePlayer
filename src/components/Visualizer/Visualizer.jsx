@@ -2,19 +2,20 @@
 import React, { useRef, useEffect } from "react";
 import styles from "./Visualizer.module.scss";
 
-export default function Visualizer() {
+export default function Visualizer({ playing }) {
   const canvasRef = useRef(null);
+  const animationId = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const barCount = 48;
     const values = new Array(barCount).fill(0);
-    const targets = new Array(barCount).fill(0).map(() => Math.random());
-    const smoothing = 0.05; // чем меньше — тем плавнее и медленнее
-    const changeThreshold = 0.01; // порог для генерации новой цели
+    const targets = values.map(() => Math.random());
+    const smoothing = 0.05;
+    const changeThreshold = 0.01;
 
-    let animationId;
     const draw = () => {
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
@@ -31,25 +32,28 @@ export default function Visualizer() {
 
       const barWidth = width / barCount;
       for (let i = 0; i < barCount; i++) {
-        // обновляем текущее значение по направлению к цели
         values[i] += (targets[i] - values[i]) * smoothing;
-
-        // если близко к цели — выбираем новую
         if (Math.abs(values[i] - targets[i]) < changeThreshold) {
           targets[i] = Math.random();
         }
-
         const barHeight = values[i] * height;
         const x = i * barWidth;
         ctx.fillRect(x + 1, height - barHeight, barWidth - 2, barHeight);
       }
 
-      animationId = requestAnimationFrame(draw);
+      animationId.current = requestAnimationFrame(draw);
     };
 
-    draw();
-    return () => cancelAnimationFrame(animationId);
-  }, []);
+    if (playing) {
+      draw();
+    } else {
+      cancelAnimationFrame(animationId.current);
+    }
+
+    return () => {
+      cancelAnimationFrame(animationId.current);
+    };
+  }, [playing]);
 
   return (
     <div className={styles.wrapper}>
