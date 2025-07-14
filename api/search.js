@@ -37,3 +37,7 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "YouTube search failed" });
   }
 }
+
+export const config = {
+  runtime: "nodejs18.x",
+};
