@@ -8,8 +8,13 @@ export default function Visualizer() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    let animationId;
+    const barCount = 48;
+    const values = new Array(barCount).fill(0);
+    const targets = new Array(barCount).fill(0).map(() => Math.random());
+    const smoothing = 0.05; // чем меньше — тем плавнее и медленнее
+    const changeThreshold = 0.01; // порог для генерации новой цели
 
+    let animationId;
     const draw = () => {
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
@@ -18,17 +23,23 @@ export default function Visualizer() {
       ctx.fillStyle = "#222";
       ctx.fillRect(0, 0, width, height);
 
-      // создаём градиент для баров
+      // градиент для баров
       const grad = ctx.createLinearGradient(0, 0, 0, height);
       grad.addColorStop(0, "#4caf50");
       grad.addColorStop(1, "#fff");
       ctx.fillStyle = grad;
 
-      const barCount = 64;
       const barWidth = width / barCount;
       for (let i = 0; i < barCount; i++) {
-        const value = Math.random(); // случайная высота
-        const barHeight = value * height;
+        // обновляем текущее значение по направлению к цели
+        values[i] += (targets[i] - values[i]) * smoothing;
+
+        // если близко к цели — выбираем новую
+        if (Math.abs(values[i] - targets[i]) < changeThreshold) {
+          targets[i] = Math.random();
+        }
+
+        const barHeight = values[i] * height;
         const x = i * barWidth;
         ctx.fillRect(x + 1, height - barHeight, barWidth - 2, barHeight);
       }
